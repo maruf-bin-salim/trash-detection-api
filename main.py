@@ -2,7 +2,6 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from uvicorn import run
 from fastai.vision.all import *
-import skimage
 from urllib.request import urlopen
 import os
 
