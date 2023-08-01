@@ -1,0 +1,6 @@
+fastai == 2.7.12
+fastapi == 0.96.1 
+uvicorn== 0.22.0 
+scikit-image  == 0.21.0
+numpy==1.24.3
+urllib3 == 1.26.15
