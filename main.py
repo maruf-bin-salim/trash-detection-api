@@ -5,8 +5,6 @@ from fastai.vision.all import *
 from urllib.request import urlopen
 import os
 
-## G8KJSEj5_t6xDRhJe433k7MxzJdAwiwp8oQcAcHaC
-## access token for space (deta)
 
 app = FastAPI()
 
