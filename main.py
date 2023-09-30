@@ -1,10 +1,11 @@
-from fastapi import FastAPI, Request, UploadFile, File, HTTPException, Form
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from uvicorn import run
-from fastai.vision.all import *
 import os
+import base64
 from PIL import Image
 from io import BytesIO
+import json
 
 app = FastAPI()
 
@@ -27,21 +28,36 @@ async def root():
     return {"message": "Welcome to the Garbage Classification API!"}
 
 @app.post("/predict")
-async def predict_image(file: UploadFile = File(...)):
-    # Add validation for image file
-    if not file:
-        raise HTTPException(status_code=422, detail="No image provided")
-    
-    image_bytes = await file.read()
-    image = Image.open(BytesIO(image_bytes))
+async def predict_from_data_url(request: Request):
+    try:
+        data = await request.json()
+        image_data_url = data.get("image_data_url")
 
-    pred, idx, prob = learn.predict(image)
+        if not image_data_url:
+            raise HTTPException(status_code=422, detail="No image data URL provided")
 
-    classes = ["cardboard", "glass", "metal", "paper", "plastic", "trash"]
-    overall_probabilities = [{"class": classes[i], "probability": float(prob[i])} for i in range(len(classes))]
-    overall_probabilities = sorted(overall_probabilities, key=lambda k: k['probability'], reverse=True)
+        # Extract the base64-encoded image data from the Data URL
+        if image_data_url.startswith("data:image/jpeg;base64,"):
+            image_data = image_data_url.split(",")[1]
+            image_bytes = base64.b64decode(image_data)
 
-    return {"prediction": {"name": pred, "probability": float(prob[idx])}, "overall_probabilities": overall_probabilities}
+            # Convert the image bytes to a PIL Image
+            image = Image.open(BytesIO(image_bytes))
+
+            # Perform prediction on the image using your model
+            pred, idx, prob = learn.predict(image)
+
+            classes = ["cardboard", "glass", "metal", "paper", "plastic", "trash"]
+            overall_probabilities = [{"class": classes[i], "probability": float(prob[i])} for i in range(len(classes))]
+            overall_probabilities = sorted(overall_probabilities, key=lambda k: k['probability'], reverse=True)
+
+            return {"prediction": {"name": pred, "probability": float(prob[idx])}, "overall_probabilities": overall_probabilities}
+
+        else:
+            raise HTTPException(status_code=422, detail="Invalid image data URL format")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
