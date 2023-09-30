@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, UploadFile, File
+from fastapi import FastAPI, Request, UploadFile, File, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
 from uvicorn import run
 from fastai.vision.all import *
@@ -27,36 +27,11 @@ async def root():
     return {"message": "Welcome to the Garbage Classification API!"}
 
 @app.post("/predict")
-async def get_net_image_prediction(request: Request):
-    body = await request.json()
-    image_link = body.get("image_link")
-    print("Image link is -> ", image_link)
-
-    if image_link is None:
-        return {"message": "No image link provided"}
-    if image_link == "":
-        return {"message": "No image link provided"}
-
-    isValidUrl = False
-    try:
-        urlopen(image_link)
-        isValidUrl = True
-    except:
-        isValidUrl = False
-
-    if not isValidUrl:
-        return {"message": "Invalid image link provided"}
-
-    pred, idx, prob = learn.predict(PILImage.create(urlopen(image_link)))
-
-    classes = ["cardboard", "glass", "metal", "paper", "plastic", "trash"]
-    overall_probabilities = [{"class": classes[i], "probability": float(prob[i])} for i in range(len(classes))]
-    overall_probabilities = sorted(overall_probabilities, key=lambda k: k['probability'], reverse=True)
-
-    return {"prediction" : {"name": pred, "probability": float(prob[idx])}, "overall_probabilities": overall_probabilities}
-
-@app.post("/upload-image")
-async def upload_image(file: UploadFile):
+async def predict_image(file: UploadFile = File(...)):
+    # Add validation for image file
+    if not file:
+        raise HTTPException(status_code=422, detail="No image provided")
+    
     image_bytes = await file.read()
     image = Image.open(BytesIO(image_bytes))
 
