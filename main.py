@@ -44,8 +44,21 @@ async def predict_from_data_url(request: Request):
             image_data = image_data_url.split(",")[1]
             image_bytes = base64.b64decode(image_data)
 
+           if image_bytes is None or len(image_bytes) == 0:
+               raise HTTPException(status_code=422, detail="Couldn't get image bytes from the data URL")
+
+
+            bytesToImage = BytesIO(image_bytes)
+
+            if bytesToImage is None:
+                raise HTTPException(status_code=422, detail="Couldn't convert to bytesIO from the data URL")
+
             # Convert the image bytes to a PIL Image
-            image = Image.open(BytesIO(image_bytes))
+            image = Image.open(bytesToImage)
+
+            if image is None:
+                raise HTTPException(status_code=422, detail="Couldn't convert to image!")
+
 
             # Perform prediction on the image using your model
             pred, idx, prob = learn.predict(image)
