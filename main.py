@@ -1,11 +1,14 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from uvicorn import run
+from fastai.vision.all import *
 import os
 import base64
 from PIL import Image
 from io import BytesIO
 import json
+
+
 
 app = FastAPI()
 
