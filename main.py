@@ -1,9 +1,10 @@
-from fastapi import FastAPI, Request, File, UploadFile
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from uvicorn import run
 from fastai.vision.all import *
-from io import BytesIO
+from urllib.request import urlopen
 import os
+
 
 app = FastAPI()
 
@@ -21,23 +22,34 @@ app.add_middleware(
 
 learn = load_learner("export.pkl")
 
+
 @app.get("/")
 async def root():
     return {"message": "Welcome to the Garbage Classification API!"}
 
 @app.post("/predict")
-async def get_net_image_prediction(file: UploadFile):
-    image_bytes = await file.read()
+async def get_net_image_prediction(request: Request):
+    body = await request.json()
+    image_link = body.get("image_link")
+    print("Image link is -> ", image_link)
 
-    if not image_bytes:
-        return {"message": "No image data provided"}
+    if(image_link == None):
+        return {"message": "No image link provided"}
+    if image_link == "":
+        return {"message": "No image link provided"}
 
+
+    isValidUrl = False
     try:
-        image = PILImage.create(BytesIO(image_bytes))
-    except Exception as e:
-        return {"message": f"Error processing image: {str(e)}"}
+        urlopen(image_link)
+        isValidUrl = True
+    except:
+        isValidUrl = False
 
-    pred, idx, prob = learn.predict(image)
+    if not isValidUrl:
+        return {"message": "Invalid image link provided"}
+
+    pred, idx, prob = learn.predict(PILImage.create(urlopen(image_link)))
 
     classes = ["cardboard", "glass", "metal", "paper", "plastic", "trash"]
     overall_probabilities = [{"class": classes[i], "probability": float(prob[i])} for i in range(len(classes))]
